@@ -5,6 +5,10 @@ declare global {
       JWT_SECRET: string
     }
   }
+
+  type JWTToken = {
+    sessionId: string
+  }
 }
 
 export {}

@@ -1,0 +1,1 @@
+export { generateSessionId } from "./generateSessionId"
