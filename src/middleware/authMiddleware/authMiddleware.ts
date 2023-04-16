@@ -3,8 +3,12 @@ import jwt from "jsonwebtoken"
 import { generateSessionId } from "@/utils"
 import Cookies from "cookies"
 
-export function authMiddleware(handler: NextApiHandler): NextApiHandler {
-  return async (req: NextApiRequest, res: NextApiResponse) => {
+export function authMiddleware<
+  Req extends NextApiRequest = NextApiRequest,
+  Res extends NextApiResponse = NextApiResponse,
+  ReturnReq extends Req & { user: JWTToken } = Req & { user: JWTToken }
+>(handler: (req: ReturnReq, res: Res) => Promise<void>) {
+  return async (req: Req, res: Res) => {
     try {
       const token = req.headers.authorization?.split(" ")[1]
 
@@ -13,7 +17,7 @@ export function authMiddleware(handler: NextApiHandler): NextApiHandler {
       }
 
       const decoded: JWTToken = jwt.verify(token, process.env.JWT_SECRET) as JWTToken
-      ;(req as NextApiRequest & { user: JWTToken }).user = decoded
+      ;(req as any as ReturnReq).user = decoded
 
       if (!token) {
         const decoded: JWTToken = {
@@ -22,7 +26,7 @@ export function authMiddleware(handler: NextApiHandler): NextApiHandler {
         const newToken = jwt.sign(decoded, process.env.JWT_SECRET, {
           expiresIn: Number.MAX_SAFE_INTEGER,
         })
-        ;(req as NextApiRequest & { user: JWTToken }).user = decoded
+        ;(req as any as ReturnReq).user = decoded
         const cookies = new Cookies(req, res)
         cookies.set("token", newToken, {
           httpOnly: true,
@@ -32,10 +36,10 @@ export function authMiddleware(handler: NextApiHandler): NextApiHandler {
         })
       } else {
         const decoded: JWTToken = jwt.verify(token, process.env.JWT_SECRET) as JWTToken
-        ;(req as NextApiRequest & { user: JWTToken }).user = decoded
+        ;(req as any as ReturnReq).user = decoded
       }
 
-      return handler(req, res)
+      return handler(req as any as ReturnReq, res)
     } catch (error) {
       return res.status(401).json({ message: "Unauthorized" })
     }
